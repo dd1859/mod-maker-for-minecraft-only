@@ -1,51 +1,50 @@
-# AI Minecraft Mod Generator (All Python, No Server)
+# AI Minecraft Mod Generator (Python CLI)
 
-This project is a **Python-only CLI pipeline** (no FastAPI, no React server).
+Generate and compile a Minecraft Forge mod from a prompt using an OpenAI/ollamafreeapi-compatible endpoint.
 
-It will:
+## API variables supported
 
-1. Fetch lightweight web context for Forge modding.
-2. Call an **ollamafreeapi/OpenAI-compatible** chat endpoint to generate Java code.
-3. Create a valid Forge mod structure from a local MDK template.
-4. Inject `MainMod.java` + `GeneratedContent.java`.
-5. Run `./gradlew build`.
-6. Print the output `.jar` path.
+You can use either naming style:
 
-## Setup (Windows)
+- `OPENAI_API_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`
+- `OLLAMAFREEAPI_URL`, `OLLAMAFREEAPI_KEY`, `OLLAMAFREEAPI_MODEL`
 
-Run:
+> Never commit real API keys to git.
+
+## Windows quick start
+
+1. Run setup:
 
 ```bat
 setup_windows.bat
 ```
 
-What it does:
-
-- checks for `python`
-- checks for `java` (JDK 17+)
-- if missing, downloads installers with `curl` and installs silently
-- creates `.venv`
-- installs `requirements.txt`
-
-Then start a build with:
+2. Run interactive starter:
 
 ```bat
-set OLLAMAFREEAPI_URL=https://your-ollamafreeapi-endpoint/v1/chat/completions
-set OLLAMAFREEAPI_KEY=your_key
-set OLLAMAFREEAPI_MODEL=gpt-4o-mini
+start_windows.bat
+```
 
+Or run with args:
+
+```bat
 start_windows.bat "Create a glowing ore block that drops XP" glowore
 ```
 
-## Setup (manual / Linux / macOS)
+## Manual run (Linux/macOS/PowerShell)
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+
+export OPENAI_API_URL="https://api.openai.com/v1/chat/completions"
+export OPENAI_API_KEY="YOUR_KEY"
+export OPENAI_MODEL="gpt-4o-mini"
+python mod_generator.py "Create a glowing ore block that drops XP" --mod-id glowore
 ```
 
-## Forge template
+## Forge template requirements
 
 Put a Forge MDK template in `template/` with at least:
 
@@ -54,26 +53,21 @@ Put a Forge MDK template in `template/` with at least:
 - `gradlew.bat`
 - `gradle/wrapper/*`
 
-## Direct CLI run
+## Troubleshooting
+
+- Missing key: set `OPENAI_API_KEY` or `OLLAMAFREEAPI_KEY`.
+- Missing template files: copy full Forge MDK into `template/`.
+- Gradle errors: verify Java 17+ with `java -version`.
+- AI HTTP errors (401/403/404): verify URL/key/model.
+
+
+## If GitHub still says "This branch has conflicts"
+
+That means conflict is against the remote base branch, not just local conflict markers.
+Use:
 
 ```bash
-export OLLAMAFREEAPI_URL="https://your-ollamafreeapi-endpoint/v1/chat/completions"
-export OLLAMAFREEAPI_KEY="your_key"
-export OLLAMAFREEAPI_MODEL="gpt-4o-mini"
-
-python mod_generator.py "Create a glowing ore block that drops XP" --mod-id glowore
+./resolve_conflicts.sh origin main
 ```
 
-Optional args:
-
-- `--template-dir template`
-- `--output-dir generated_mods`
-- `--ai-url ...`
-- `--ai-key ...`
-- `--ai-model ...`
-
-## Notes
-
-- Keep builds sandboxed in production (container/VM).
-- API keys stay local only.
-- `setup_windows.bat` relies on internet access to download installers.
+Then fix any files listed as unmerged, `git add` them, and commit.
