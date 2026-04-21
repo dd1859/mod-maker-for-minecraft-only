@@ -22,6 +22,17 @@ The CLI supports both variable styles:
 
 ## Setup (Windows)
 
+## Quick local key use (do not commit)
+
+Use your key only in your terminal session (or local `.env`), for example on Windows:
+
+```bat
+set OPENAI_API_KEY=YOUR_KEY_HERE
+set OPENAI_API_URL=https://api.openai.com/v1/chat/completions
+set OPENAI_MODEL=gpt-4o-mini
+start_windows.bat
+```
+
 Run:
 
 ```bat
