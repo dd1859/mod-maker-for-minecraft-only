@@ -5,10 +5,11 @@ This is now a **desktop Tkinter app** (Python only).
 ## What changed
 
 - No API URL/model configuration needed in UI.
-- The app only asks for **API key**.
-- Uses fixed OpenAI chat endpoint + model internally:
-  - `https://api.openai.com/v1/chat/completions`
-  - `gpt-4o-mini`
+- The app only asks for a **Gemini API key**.
+- Uses fixed Gemini endpoint + model internally:
+  - `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent`
+  - `gemini-2.0-flash`
+- Sends only one AI request per generation (no extra web-context request).
 
 ## Windows quick start
 
@@ -25,7 +26,7 @@ start_windows.bat
 ```
 
 3. In the UI:
-   - Paste API key
+   - Paste Gemini API key
    - Enter Mod ID + prompt
    - Click **Generate + Build**
 
@@ -50,5 +51,5 @@ Put a Forge MDK template in `template/` with at least:
 ## Troubleshooting
 
 - `Missing template files`: copy full Forge MDK to `template/`.
-- `HTTP 401/403`: invalid API key.
+- `HTTP 401/403`: invalid Gemini API key.
 - Gradle build errors: ensure Java 17+ is installed.
