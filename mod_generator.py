@@ -10,26 +10,18 @@ import shutil
 import subprocess
 import threading
 import urllib.error
-import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
 from tkinter import END, Button, Entry, Label, StringVar, Text, Tk, messagebox
 
-API_URL = "https://api.openai.com/v1/chat/completions"
-MODEL = "gpt-4o-mini"
-DEFAULT_CONTEXT = "Minecraft Forge modding context"
+API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+MODEL = "gemini-2.0-flash"
 
 
 def sanitize_mod_id(mod_id: str) -> str:
     mod_id = re.sub(r"[^a-z0-9_]", "", mod_id.lower().strip())
     return (mod_id or "generatedmod")[:50]
-
-
-def http_get_json(url: str, timeout: int = 20) -> dict:
-    req = urllib.request.Request(url, method="GET")
-    with urllib.request.urlopen(req, timeout=timeout) as res:
-        return json.loads(res.read().decode("utf-8"))
 
 
 def http_post_json(url: str, payload: dict, headers: dict, timeout: int = 90) -> dict:
@@ -43,38 +35,33 @@ def http_post_json(url: str, payload: dict, headers: dict, timeout: int = 90) ->
         return json.loads(res.read().decode("utf-8"))
 
 
-def fetch_web_context(prompt: str) -> str:
-    q = urllib.parse.quote_plus(f"Minecraft Forge mod example {prompt}")
-    url = f"https://api.duckduckgo.com/?q={q}&format=json"
-    try:
-        data = http_get_json(url)
-        return data.get("AbstractText") or DEFAULT_CONTEXT
-    except Exception:
-        return DEFAULT_CONTEXT
-
-
-def generate_ai_java(prompt: str, context: str, api_key: str) -> str:
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}",
-    }
+def generate_ai_java(prompt: str, api_key: str) -> str:
+    headers = {"Content-Type": "application/json"}
     payload = {
-        "model": MODEL,
-        "messages": [
+        "contents": [
             {
-                "role": "system",
-                "content": (
-                    "Generate valid Java for a Minecraft Forge mod. "
-                    "Return Java source only, no markdown. "
-                    f"Context: {context}"
-                ),
+                "parts": [
+                    {
+                        "text": (
+                            "Generate valid Java for a Minecraft Forge mod. "
+                            "Return Java source only, no markdown.\n\n"
+                            f"Prompt: {prompt}"
+                        )
+                    }
+                ]
             },
-            {"role": "user", "content": prompt},
         ],
-        "temperature": 0.2,
+        "generationConfig": {"temperature": 0.2},
     }
-    data = http_post_json(API_URL, payload, headers)
-    out = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
+    endpoint = f"{API_URL}/{MODEL}:generateContent?key={api_key}"
+    data = http_post_json(endpoint, payload, headers)
+    out = (
+        data.get("candidates", [{}])[0]
+        .get("content", {})
+        .get("parts", [{}])[0]
+        .get("text", "")
+        .strip()
+    )
     if not out:
         raise RuntimeError("AI response was empty")
     return out
@@ -95,7 +82,7 @@ public class MainMod {{
 
 
 def ensure_template(template_dir: Path) -> None:
-    required = [template_dir / "build.gradle", template_dir / "gradlew"]
+    required = [template_dir / "build.gradle", template_dir / "gradlew", template_dir / "gradlew.bat"]
     missing = [str(p) for p in required if not p.exists()]
     if missing:
         raise FileNotFoundError("Missing template files: " + ", ".join(missing))
@@ -111,9 +98,19 @@ def build_project(template_dir: Path, output_dir: Path, mod_id: str, ai_java: st
     (src / "MainMod.java").write_text(base_class(mod_id), encoding="utf-8")
     (src / "GeneratedContent.java").write_text(ai_java, encoding="utf-8")
 
-    gradlew = "gradlew.bat" if os.name == "nt" else "./gradlew"
+    wrapper_candidates = ["gradlew.bat", "gradlew"] if os.name == "nt" else ["gradlew", "gradlew.bat"]
+    gradlew_path = next((project_dir / candidate for candidate in wrapper_candidates if (project_dir / candidate).exists()), None)
+    if not gradlew_path:
+        raise FileNotFoundError(
+            "Gradle wrapper not found in generated project. Expected one of: "
+            + ", ".join(wrapper_candidates)
+        )
+
+    if os.name != "nt":
+        gradlew_path.chmod(0o755)
+
     run = subprocess.run(
-        [gradlew, "build"],
+        [str(gradlew_path), "build"],
         cwd=project_dir,
         capture_output=True,
         text=True,
@@ -147,11 +144,8 @@ def run_generator(api_key: str, prompt: str, mod_id: str, log: Text, button: But
             output.mkdir(parents=True, exist_ok=True)
 
             clean_mod_id = sanitize_mod_id(mod_id)
-            log.insert(END, "Fetching web context...\n")
-            context = fetch_web_context(prompt)
-
-            log.insert(END, "Generating Java with OpenAI...\n")
-            java_code = generate_ai_java(prompt, context, api_key)
+            log.insert(END, "Generating Java with Gemini...\n")
+            java_code = generate_ai_java(prompt, api_key)
 
             log.insert(END, "Running Gradle build...\n")
             jar_path = build_project(template, output, clean_mod_id, java_code)
@@ -180,7 +174,7 @@ def main() -> None:
     api_key_var = StringVar()
     mod_id_var = StringVar(value="generatedmod")
 
-    Label(app, text="OpenAI API Key:").pack(anchor="w", padx=12, pady=(12, 2))
+    Label(app, text="Gemini API Key:").pack(anchor="w", padx=12, pady=(12, 2))
     Entry(app, textvariable=api_key_var, show="*", width=90).pack(anchor="w", padx=12)
 
     Label(app, text="Mod ID:").pack(anchor="w", padx=12, pady=(10, 2))
