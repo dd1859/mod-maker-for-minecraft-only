@@ -59,3 +59,15 @@ Put a Forge MDK template in `template/` with at least:
 - Missing template files: copy full Forge MDK into `template/`.
 - Gradle errors: verify Java 17+ with `java -version`.
 - AI HTTP errors (401/403/404): verify URL/key/model.
+
+
+## If GitHub still says "This branch has conflicts"
+
+That means conflict is against the remote base branch, not just local conflict markers.
+Use:
+
+```bash
+./resolve_conflicts.sh origin main
+```
+
+Then fix any files listed as unmerged, `git add` them, and commit.
