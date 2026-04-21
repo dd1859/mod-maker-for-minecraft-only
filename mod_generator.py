@@ -82,7 +82,7 @@ public class MainMod {{
 
 
 def ensure_template(template_dir: Path) -> None:
-    required = [template_dir / "build.gradle", template_dir / "gradlew"]
+    required = [template_dir / "build.gradle", template_dir / "gradlew", template_dir / "gradlew.bat"]
     missing = [str(p) for p in required if not p.exists()]
     if missing:
         raise FileNotFoundError("Missing template files: " + ", ".join(missing))
@@ -98,9 +98,19 @@ def build_project(template_dir: Path, output_dir: Path, mod_id: str, ai_java: st
     (src / "MainMod.java").write_text(base_class(mod_id), encoding="utf-8")
     (src / "GeneratedContent.java").write_text(ai_java, encoding="utf-8")
 
-    gradlew = "gradlew.bat" if os.name == "nt" else "./gradlew"
+    wrapper_candidates = ["gradlew.bat", "gradlew"] if os.name == "nt" else ["gradlew", "gradlew.bat"]
+    gradlew_path = next((project_dir / candidate for candidate in wrapper_candidates if (project_dir / candidate).exists()), None)
+    if not gradlew_path:
+        raise FileNotFoundError(
+            "Gradle wrapper not found in generated project. Expected one of: "
+            + ", ".join(wrapper_candidates)
+        )
+
+    if os.name != "nt":
+        gradlew_path.chmod(0o755)
+
     run = subprocess.run(
-        [gradlew, "build"],
+        [str(gradlew_path), "build"],
         cwd=project_dir,
         capture_output=True,
         text=True,
