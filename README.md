@@ -1,15 +1,14 @@
-# AI Minecraft Mod Generator (Python CLI)
+# AI Minecraft Mod Generator (Tkinter UI)
 
-Generate and compile a Minecraft Forge mod from a prompt using an OpenAI/ollamafreeapi-compatible endpoint.
+This is now a **desktop Tkinter app** (Python only).
 
-## API variables supported
+## What changed
 
-You can use either naming style:
-
-- `OPENAI_API_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`
-- `OLLAMAFREEAPI_URL`, `OLLAMAFREEAPI_KEY`, `OLLAMAFREEAPI_MODEL`
-
-> Never commit real API keys to git.
+- No API URL/model configuration needed in UI.
+- The app only asks for **API key**.
+- Uses fixed OpenAI chat endpoint + model internally:
+  - `https://api.openai.com/v1/chat/completions`
+  - `gpt-4o-mini`
 
 ## Windows quick start
 
@@ -19,29 +18,24 @@ You can use either naming style:
 setup_windows.bat
 ```
 
-2. Run interactive starter:
+2. Launch app:
 
 ```bat
 start_windows.bat
 ```
 
-Or run with args:
+3. In the UI:
+   - Paste API key
+   - Enter Mod ID + prompt
+   - Click **Generate + Build**
 
-```bat
-start_windows.bat "Create a glowing ore block that drops XP" glowore
-```
-
-## Manual run (Linux/macOS/PowerShell)
+## Manual launch
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-
-export OPENAI_API_URL="https://api.openai.com/v1/chat/completions"
-export OPENAI_API_KEY="YOUR_KEY"
-export OPENAI_MODEL="gpt-4o-mini"
-python mod_generator.py "Create a glowing ore block that drops XP" --mod-id glowore
+python mod_generator.py
 ```
 
 ## Forge template requirements
@@ -55,19 +49,6 @@ Put a Forge MDK template in `template/` with at least:
 
 ## Troubleshooting
 
-- Missing key: set `OPENAI_API_KEY` or `OLLAMAFREEAPI_KEY`.
-- Missing template files: copy full Forge MDK into `template/`.
-- Gradle errors: verify Java 17+ with `java -version`.
-- AI HTTP errors (401/403/404): verify URL/key/model.
-
-
-## If GitHub still says "This branch has conflicts"
-
-That means conflict is against the remote base branch, not just local conflict markers.
-Use:
-
-```bash
-./resolve_conflicts.sh origin main
-```
-
-Then fix any files listed as unmerged, `git add` them, and commit.
+- `Missing template files`: copy full Forge MDK to `template/`.
+- `HTTP 401/403`: invalid API key.
+- Gradle build errors: ensure Java 17+ is installed.
